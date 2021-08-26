@@ -27,7 +27,7 @@ const char *PUNCTUATION_MARKS = " ,.!?:-;\"(){}<>";
 
 int main()
 {
-    FILE *finput = nullptr;
+    FILE *finput = fopen(INPUT_FILE, "r");
 
     int linesCount = countNumberLines(finput);
     Line lines[linesCount];
@@ -45,13 +45,13 @@ int main()
 
     writeFile(lines, linesCount, foutput);
 
+    fclose(finput);
+
     return 0;
 }
 
 int countNumberLines(FILE *finput)
 {
-    finput = fopen(INPUT_FILE, "r");
-
     assert(finput != nullptr);
 
     int linesCount = 0;
@@ -65,7 +65,7 @@ int countNumberLines(FILE *finput)
         symbol = fgetc(finput);
     }
 
-    fclose(finput);
+    rewind(finput);
 
     return (linesCount + 1);
 }
@@ -77,8 +77,6 @@ bool isPunctuationMark(int symbol)
 
 void readFile(Line lines[], int linesCount, FILE *finput)
 {
-    finput = fopen(INPUT_FILE, "r");
-
     char *str = nullptr;
 
     for (int i = 0; i < linesCount; i++)
@@ -108,8 +106,6 @@ void readFile(Line lines[], int linesCount, FILE *finput)
         lines[i].lineNumber = i + 1;
         lines[i].str = str;
     }
-
-    fclose(finput);
 }
 
 void moveToNextLine(FILE *foutput)
