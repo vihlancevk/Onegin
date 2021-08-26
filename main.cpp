@@ -16,10 +16,10 @@ void moveToNextLine(FILE *foutput);
 void writeFile(Line lines[], int linesCount, FILE *foutput);
 void swap(Line lines[], int i, int j);
 int myStrcmp(char *str1, char *str2);
-void Qsort(Line lines[], int left, int right);
+void qsort(Line lines[], int left, int right);
 int reverseStrcmp(char *str1, char *str2);
 void reverseQsort(Line lines[], int left, int right);
-void returnToOriginalText(Line lines[], int left, int right);
+void restoreOriginalText(Line lines[], int left, int right);
 
 const char *INPUT_FILE = "input.txt";
 const char *OUTPUT_FILE = "output.txt";
@@ -28,11 +28,8 @@ const char *PUNCTUATION_MARKS = " ,.!?:-;\"(){}<>";
 int main()
 {
     FILE *finput = fopen(INPUT_FILE, "r");
-
     int linesCount = countNumberLines(finput);
     Line lines[linesCount];
-
-    //printf("linesCount: %d\n", linesCount);
 
     for (int i = 0; i < linesCount; i++)
     {
@@ -41,11 +38,12 @@ int main()
 
     readFile(lines, linesCount, finput);
 
-    FILE *foutput = nullptr;
+    FILE *foutput = fopen(OUTPUT_FILE, "w");
 
     writeFile(lines, linesCount, foutput);
 
     fclose(finput);
+    fclose(foutput);
 
     return 0;
 }
@@ -117,8 +115,8 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
 {
     foutput = fopen(OUTPUT_FILE, "w");
 
-    fputs("Qsort\n", foutput);
-    Qsort(lines, 0, linesCount - 1);
+    fputs("qsort\n", foutput);
+    qsort(lines, 0, linesCount - 1);
 
     for (int i = 0; i < linesCount; i++)
     {
@@ -128,7 +126,7 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
 
     moveToNextLine(foutput);
 
-    fputs("ReverseQsort\n", foutput);
+    fputs("reverseQsort\n", foutput);
     reverseQsort(lines, 0, linesCount - 1);
 
     for (int i = 0; i < linesCount; i++)
@@ -140,47 +138,41 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
     moveToNextLine(foutput);
 
     fputs("OriginalText\n", foutput);
-    returnToOriginalText(lines, 0, linesCount - 1);
+    restoreOriginalText(lines, 0, linesCount - 1);
 
     for (int i = 0; i < linesCount; i++)
     {
         fputs(lines[i].str, foutput);
         moveToNextLine(foutput);
     }
-
-    fclose(foutput);
 }
 
 int myStrcmp(char *str1, char *str2)
 {
-    int lenStr1 = strlen(str1);
-    int lenStr2 = strlen(str2);
-    int i = 0, j = 0;
+    char *ptrStr1 = str1;
+    char *ptrStr2 = str2;
 
-    while (i < lenStr1 && j < lenStr2)
+    for ( ; *ptrStr1 == *ptrStr2; ptrStr1++, ptrStr2++)
     {
-        if (isPunctuationMark(str1[i]))
+        if (isPunctuationMark(*ptrStr1))
         {
-            i++;
+            ptrStr1++;
             continue;
         }
 
-        if (isPunctuationMark(str2[i]))
+        if (isPunctuationMark(*ptrStr2))
         {
-            j++;
+            ptrStr2++;
             continue;
         }
 
-        if (str1[i] != str2[j])
+        if (*ptrStr1 == '\0' || *ptrStr2 == '\0')
         {
-            return (str1[i] - str2[j]);
+            return ((int)strlen(str1) - (int)strlen(str2));
         }
-
-        i++;
-        j++;
     }
 
-    return (lenStr1 - lenStr2);
+    return (*ptrStr1 - *ptrStr2);
 }
 
 void swap(Line lines[], int i, int j)
@@ -190,7 +182,7 @@ void swap(Line lines[], int i, int j)
     lines[j] = buffer;
 }
 
-void Qsort(Line lines[], int left, int right)
+void qsort(Line lines[], int left, int right)
 {
     int pivot = left;
 
@@ -209,39 +201,39 @@ void Qsort(Line lines[], int left, int right)
     }
 
     swap(lines, left, pivot);
-    Qsort(lines, left, pivot - 1);
-    Qsort(lines, pivot + 1, right);
+    qsort(lines, left, pivot - 1);
+    qsort(lines, pivot + 1, right);
 }
 
 int reverseStrcmp(char *str1, char *str2)
 {
-    int ptrSymbolStr1 = (int)strlen(str1) - 1;
-    int ptrSymbolStr2 = (int)strlen(str2) - 1;
+    int numberUnreadCharactersStr1 = (int)strlen(str1) - 1;
+    int numberUnreadCharactersStr2 = (int)strlen(str2) - 1;
 
-    while (ptrSymbolStr1 >= 0 && ptrSymbolStr2 >= 0)
+    while (numberUnreadCharactersStr1 >= 0 && numberUnreadCharactersStr2 >= 0)
     {
-        if (isPunctuationMark(str1[ptrSymbolStr1]))
+        if (isPunctuationMark(str1[numberUnreadCharactersStr1]))
         {
-            ptrSymbolStr1--;
+            numberUnreadCharactersStr1--;
             continue;
         }
 
-        if (isPunctuationMark(str2[ptrSymbolStr2]))
+        if (isPunctuationMark(str2[numberUnreadCharactersStr2]))
         {
-            ptrSymbolStr2--;
+            numberUnreadCharactersStr2--;
             continue;
         }
 
-        if (str1[ptrSymbolStr1] != str2[ptrSymbolStr2])
+        if (str1[numberUnreadCharactersStr1] != str2[numberUnreadCharactersStr2])
         {
-            return (str1[ptrSymbolStr1] - str2[ptrSymbolStr2]);
+            return (str1[numberUnreadCharactersStr1] - str2[numberUnreadCharactersStr2]);
         }
 
-        ptrSymbolStr1--;
-        ptrSymbolStr2--;
+        numberUnreadCharactersStr1--;
+        numberUnreadCharactersStr2--;
     }
 
-    return (ptrSymbolStr1 - ptrSymbolStr2);
+    return (numberUnreadCharactersStr1 - numberUnreadCharactersStr2);
 }
 
 void reverseQsort(Line lines[], int left, int right)
@@ -267,7 +259,7 @@ void reverseQsort(Line lines[], int left, int right)
     reverseQsort(lines, pivot + 1, right);
 }
 
-void returnToOriginalText(Line lines[], int left, int right)
+void restoreOriginalText(Line lines[], int left, int right)
 {
     int pivot = left;
 
@@ -286,6 +278,6 @@ void returnToOriginalText(Line lines[], int left, int right)
     }
 
     swap(lines, left, pivot);
-    returnToOriginalText(lines, left, pivot - 1);
-    returnToOriginalText(lines, pivot + 1, right);
+    restoreOriginalText(lines, left, pivot - 1);
+    restoreOriginalText(lines, pivot + 1, right);
 }
