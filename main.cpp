@@ -1,8 +1,8 @@
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
 #include "txlib.h"
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
-#include <assert.h>
 
 struct Line {
     int lineNumber;
@@ -13,12 +13,12 @@ int countNumberLines(FILE *finput);
 void readFile(Line lines[], int linesCount , FILE *finput);
 void moveToNextLine(FILE *foutput);
 void writeFile(Line lines[], int linesCount, FILE *foutput);
-void swap(Line lines[], int i, int j);
+void swap(void *lines, size_t struct_size, int i, int j);
 bool isPunctuationMark(int symbol);
-int myStrcmp(char *str1, char *str2);
-int reverseStrcmp(char *str1, char *str2);
+int myStrcmp(char **str1_ptr, char **str2_ptr);
+int reverseStrcmp(char **str1_ptr, char **str2_ptr);
 int compareNumbers(int *number1, int *number2);
-void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *), bool isStrCmp);
+void qsort(void *lines, size_t struct_size,  size_t offset, int left, int right, int (*strCompare)(void *, void *));
 
 const char *INPUT_FILE = "input.txt";
 const char *OUTPUT_FILE = "output.txt";
@@ -47,6 +47,14 @@ int main()
     return 0;
 }
 
+//================================================================================
+//! @brief Функция подсчёта количества строк в файле.
+//!
+//! @param [in] finput файл, количестов строк которого подсчитывается.
+//!
+//! @return Количество строк в файле.
+//--------------------------------------------------------------------------------
+
 int countNumberLines(FILE *finput)
 {
     assert(finput != nullptr);
@@ -66,6 +74,15 @@ int countNumberLines(FILE *finput)
 
     return (linesCount + 1);
 }
+
+//================================================================================
+//! @brief Функция, которая cчитает строки и их порядковые номера
+//!        из файла в массив структур.
+//!
+//! @return [out] lines массив структур, в который происходит считывание из файла.
+//! @return [in] linesCount количестов строк в файле.
+//! @return [int] finput файл, из которого происходит чтение.
+//--------------------------------------------------------------------------------
 
 void readFile(Line lines[], int linesCount, FILE *finput)
 {
@@ -102,12 +119,20 @@ void readFile(Line lines[], int linesCount, FILE *finput)
     }
 }
 
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
 void moveToNextLine(FILE *foutput)
 {
     assert(foutput != nullptr);
 
     fputc('\n', foutput);
 }
+
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
 
 void writeFile(Line lines[], int linesCount, FILE *foutput)
 {
@@ -116,7 +141,7 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
     foutput = fopen(OUTPUT_FILE, "w");
 
     fputs("qsort\n", foutput);
-    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(myStrcmp), true);
+    qsort(lines, sizeof(Line), offsetof(Line, str), 0, linesCount - 1, (int (*)(void *, void *))(myStrcmp));
 
     for (int i = 0; i < linesCount; i++)
     {
@@ -127,7 +152,7 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
     moveToNextLine(foutput);
 
     fputs("reverseQsort\n", foutput);
-    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(reverseStrcmp), true);
+    qsort(lines, sizeof(Line), offsetof(Line, str), 0, linesCount - 1, (int (*)(void *, void *))(reverseStrcmp));
 
     for (int i = 0; i < linesCount; i++)
     {
@@ -138,7 +163,7 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
     moveToNextLine(foutput);
 
     fputs("OriginalText\n", foutput);
-    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(compareNumbers), false);
+    qsort(lines, sizeof(Line), offsetof(Line, lineNumber), 0, linesCount - 1, (int (*)(void *, void *))(compareNumbers));
 
     for (int i = 0; i < linesCount; i++)
     {
@@ -147,11 +172,20 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
     }
 }
 
-void swap(Line lines[], int i, int j)
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
+void swap(void *lines, size_t struct_size, int i, int j)
 {
-    Line buffer = lines[i];
-    lines[i] = lines[j];
-    lines[j] = buffer;
+
+    void *buffer = calloc(1, struct_size);
+    memcpy(buffer, (lines + i * struct_size), struct_size);
+
+    memcpy((lines + i * struct_size), (lines + j * struct_size), struct_size);
+    memcpy((lines + j * struct_size), buffer, struct_size);
+
+    free(buffer);
 }
 
 bool isPunctuationMark(int symbol)
@@ -159,8 +193,18 @@ bool isPunctuationMark(int symbol)
     return strchr(PUNCTUATION_MARKS, symbol) != nullptr;
 }
 
-int myStrcmp(char *str1, char *str2)
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
+int myStrcmp(char **str1_ptr, char **str2_ptr)
 {
+    assert(str1_ptr != nullptr);
+    assert(str2_ptr != nullptr);
+
+    char* str1 = *str1_ptr;
+    char* str2 = *str2_ptr;
+
     assert(str1 != nullptr);
     assert(str2 != nullptr);
 
@@ -190,8 +234,18 @@ int myStrcmp(char *str1, char *str2)
     return (*ptrStr1 - *ptrStr2);
 }
 
-int reverseStrcmp(char *str1, char *str2)
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
+int reverseStrcmp(char **str1_ptr, char **str2_ptr)
 {
+    assert(str1_ptr != nullptr);
+    assert(str2_ptr != nullptr);
+
+    char* str1 = *str1_ptr;
+    char* str2 = *str2_ptr;
+
     assert(str1 != nullptr);
     assert(str2 != nullptr);
 
@@ -224,6 +278,10 @@ int reverseStrcmp(char *str1, char *str2)
     return (numberUnreadCharactersStr1 - numberUnreadCharactersStr2);
 }
 
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
 int compareNumbers(int *number1, int *number2)
 {
     assert(number1 != nullptr);
@@ -232,7 +290,11 @@ int compareNumbers(int *number1, int *number2)
     return (*number1 - *number2);
 }
 
-void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *), bool isStrCmp)
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
+void qsort(void *lines, size_t struct_size,  size_t offset, int left, int right, int (*strCompare)(void *, void *))
 {
     assert(strCompare != nullptr);
 
@@ -241,19 +303,18 @@ void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *),
     if (left >= right)
         return;
 
-    swap(lines, left, (left + right) / 2);
+    swap(lines, struct_size, left, (left + right) / 2);
 
     for (int i = left + 1; i <= right; i++)
     {
-        if (isStrCmp ? ((*strCompare)(lines[i].str, lines[left].str) < 0) :
-                       ((*strCompare)(&lines[i].lineNumber, &lines[left].lineNumber) < 0))
+        if ((*strCompare)(((lines + i*struct_size) + offset), ((lines + left*struct_size) + offset)) < 0)
         {
             pivot++;
-            swap(lines, pivot, i);
+            swap(lines, struct_size, pivot, i);
         }
     }
 
-    swap(lines, left, pivot);
-    qsort(lines, left, pivot - 1, strCompare, isStrCmp);
-    qsort(lines, pivot + 1, right, strCompare, isStrCmp);
+    swap(lines, struct_size, left, pivot);
+    qsort(lines, struct_size, offset, left, pivot - 1, strCompare);
+    qsort(lines, struct_size, offset, pivot + 1, right, strCompare);
 }
