@@ -18,7 +18,7 @@ bool isPunctuationMark(int symbol);
 int myStrcmp(char *str1, char *str2);
 int reverseStrcmp(char *str1, char *str2);
 int compareNumbers(int *number1, int *number2);
-void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *));
+void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *), bool isStrCmp);
 
 const char *INPUT_FILE = "input.txt";
 const char *OUTPUT_FILE = "output.txt";
@@ -69,6 +69,8 @@ int countNumberLines(FILE *finput)
 
 void readFile(Line lines[], int linesCount, FILE *finput)
 {
+    assert(finput != nullptr);
+
     char *str = nullptr;
 
     for (int i = 0; i < linesCount; i++)
@@ -102,15 +104,19 @@ void readFile(Line lines[], int linesCount, FILE *finput)
 
 void moveToNextLine(FILE *foutput)
 {
+    assert(foutput != nullptr);
+
     fputc('\n', foutput);
 }
 
 void writeFile(Line lines[], int linesCount, FILE *foutput)
 {
+    assert(foutput != nullptr);
+
     foutput = fopen(OUTPUT_FILE, "w");
 
     fputs("qsort\n", foutput);
-    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(myStrcmp));
+    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(myStrcmp), true);
 
     for (int i = 0; i < linesCount; i++)
     {
@@ -121,7 +127,7 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
     moveToNextLine(foutput);
 
     fputs("reverseQsort\n", foutput);
-    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(reverseStrcmp));
+    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(reverseStrcmp), true);
 
     for (int i = 0; i < linesCount; i++)
     {
@@ -132,7 +138,7 @@ void writeFile(Line lines[], int linesCount, FILE *foutput)
     moveToNextLine(foutput);
 
     fputs("OriginalText\n", foutput);
-    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(compareNumbers));
+    qsort(lines, 0, linesCount - 1, (int (*)(void *, void *))(compareNumbers), false);
 
     for (int i = 0; i < linesCount; i++)
     {
@@ -155,6 +161,9 @@ bool isPunctuationMark(int symbol)
 
 int myStrcmp(char *str1, char *str2)
 {
+    assert(str1 != nullptr);
+    assert(str2 != nullptr);
+
     char *ptrStr1 = str1;
     char *ptrStr2 = str2;
 
@@ -183,6 +192,9 @@ int myStrcmp(char *str1, char *str2)
 
 int reverseStrcmp(char *str1, char *str2)
 {
+    assert(str1 != nullptr);
+    assert(str2 != nullptr);
+
     int numberUnreadCharactersStr1 = (int)strlen(str1) - 1;
     int numberUnreadCharactersStr2 = (int)strlen(str2) - 1;
 
@@ -214,14 +226,16 @@ int reverseStrcmp(char *str1, char *str2)
 
 int compareNumbers(int *number1, int *number2)
 {
-    assert(number1 != 0);
-    assert(number2 != 0);
+    assert(number1 != nullptr);
+    assert(number2 != nullptr);
 
     return (*number1 - *number2);
 }
 
-void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *))
+void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *), bool isStrCmp)
 {
+    assert(strCompare != nullptr);
+
     int pivot = left;
 
     if (left >= right)
@@ -231,7 +245,8 @@ void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *))
 
     for (int i = left + 1; i <= right; i++)
     {
-        if ((*strCompare)(lines[i].str, lines[left].str) < 0)
+        if (isStrCmp ? ((*strCompare)(lines[i].str, lines[left].str) < 0) :
+                       ((*strCompare)(&lines[i].lineNumber, &lines[left].lineNumber) < 0))
         {
             pivot++;
             swap(lines, pivot, i);
@@ -239,6 +254,6 @@ void qsort(Line lines[], int left, int right, int (*strCompare)(void *, void *))
     }
 
     swap(lines, left, pivot);
-    qsort(lines, left, pivot - 1, strCompare);
-    qsort(lines, pivot + 1, right, strCompare);
+    qsort(lines, left, pivot - 1, strCompare, isStrCmp);
+    qsort(lines, pivot + 1, right, strCompare, isStrCmp);
 }
