@@ -8,7 +8,8 @@ struct Line {
     int lineNumber;
     char *str;
 };
-
+int getNumbersBytesFile(FILE *finput);
+void readFileStr(FILE *finput, char *str, int numberBytesSize);
 int countNumberLines(FILE *finput);
 void readFile(Line lines[], int linesCount , FILE *finput);
 void moveToNextLine(FILE *foutput);
@@ -47,73 +48,108 @@ int main()
     return 0;
 }
 
+int getNumbersBytesFile(FILE *finput)
+{
+    assert(finput != nullptr);
+
+    if (fseek(finput, 0, SEEK_END))
+    {
+        printf("Error fseek\n");
+        abort();
+    }
+
+    long numberBytesFile = ftell(finput);
+    if (numberBytesFile == -1L)
+    {
+        printf("Error ftell\n");
+        abort();
+    }
+
+    rewind(finput);
+
+    return numberBytesFile;
+}
+
+void readFileStr(FILE *finput, char *str, int numberBytesFile)
+{
+    assert(finput != nullptr);
+    assert(str != nullptr);
+
+    if ((fread(str, sizeof(char), numberBytesFile, finput) != numberBytesFile) && !feof(finput))
+    {
+        printf("Error fread\n");
+        abort();
+    }
+}
+
 //================================================================================
-//! @brief Функция подсчёта количества строк в файле.
-//!
-//! @param [in] finput файл, количестов строк которого подсчитывается.
-//!
-//! @return Количество строк в файле.
+
 //--------------------------------------------------------------------------------
 
 int countNumberLines(FILE *finput)
 {
     assert(finput != nullptr);
 
-    int linesCount = 0;
-    int symbol = fgetc(finput);
+    int numberBytesFile = getNumbersBytesFile(finput);
 
-    while (symbol != EOF)
+    char *str = (char*)calloc(numberBytesFile, sizeof(char));
+    readFileStr(finput, str, numberBytesFile);
+
+    int linesCount = 0;
+
+    for (int i = 0; i < numberBytesFile; i++)
     {
-        if (symbol == '\n')
+        if (str[i] == '\n')
             linesCount++;
 
-        symbol = fgetc(finput);
+        if (str[i] == EOF)
+            break;
     }
 
     rewind(finput);
+
+    free(str);
 
     return (linesCount + 1);
 }
 
 //================================================================================
-//! @brief Функция, которая cчитает строки и их порядковые номера
-//!        из файла в массив структур.
-//!
-//! @return [out] lines массив структур, в который происходит считывание из файла.
-//! @return [in] linesCount количестов строк в файле.
-//! @return [int] finput файл, из которого происходит чтение.
+
 //--------------------------------------------------------------------------------
 
 void readFile(Line lines[], int linesCount, FILE *finput)
 {
     assert(finput != nullptr);
 
+    char *fileStr = nullptr;
     char *str = nullptr;
 
-    for (int i = 0; i < linesCount; i++)
+    int numberBytesFile = getNumbersBytesFile(finput);
+    fileStr = (char*)calloc(numberBytesFile, sizeof(char));
+    readFileStr(finput, fileStr, numberBytesFile);
+
+    for (int i = 0, j = 0; i < linesCount; i++)
     {
-        int symbol = fgetc(finput);
+        int symbol = fileStr[j++];
         int symbolCount = 0;
 
         str = (char*)calloc(1, sizeof(char));
-        str[symbolCount] = (char)symbol;
-        symbolCount++;
-        symbol = fgetc(finput);
+        str[symbolCount++] = (char)symbol;
+        symbol = fileStr[j++];
 
         while (symbol != '\n' && symbol != EOF)
         {
             str = (char*)realloc(str, (symbolCount + 1)*sizeof(char));
             assert(str != nullptr);
 
-            str[symbolCount] = (char)symbol;
-            symbolCount++;
-            symbol = fgetc(finput);
+            str[symbolCount++] = (char)symbol;
+            symbol = fileStr[j++];
         }
 
         str = (char*)realloc(str, (symbolCount + 1)*sizeof(char));
         assert(str != nullptr);
 
-        str[symbolCount] = '\0';
+        str[symbolCount++] = '\0';
         lines[i].lineNumber = i + 1;
         lines[i].str = str;
     }
@@ -211,7 +247,7 @@ int myStrcmp(char **str1_ptr, char **str2_ptr)
     char *ptrStr1 = str1;
     char *ptrStr2 = str2;
 
-    for ( ; *ptrStr1 == *ptrStr2; ptrStr1++, ptrStr2++)
+    for ( ; *ptrStr1 == *ptrStr2; )
     {
         if (isPunctuationMark(*ptrStr1))
         {
@@ -229,6 +265,9 @@ int myStrcmp(char **str1_ptr, char **str2_ptr)
         {
             return ((int)strlen(str1) - (int)strlen(str2));
         }
+
+        ptrStr1++;
+        ptrStr2++;
     }
 
     return (*ptrStr1 - *ptrStr2);
