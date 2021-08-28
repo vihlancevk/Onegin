@@ -4,18 +4,24 @@
 
 #include "txlib.h"
 
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
 struct Line {
     int lineNumber;
     char *str;
 };
-int getNumbersBytesFile(FILE *finput);
+
+int getFileSize(FILE *finput);
 void readFileStr(FILE *finput, char *str, int numberBytesSize);
 int countNumberLines(FILE *finput);
-void readFile(Line lines[], int linesCount , FILE *finput);
+void readFileStruct(Line *lines, int linesCount , FILE *finput);
 void moveToNextLine(FILE *foutput);
 void writeFile(Line lines[], int linesCount, FILE *foutput);
 void swap(void *lines, size_t struct_size, int i, int j);
 bool isPunctuationMark(int symbol);
+void *cleanPunctuationMark(char *str, char *endStr, bool isSum);
 int myStrcmp(char **str1_ptr, char **str2_ptr);
 int reverseStrcmp(char **str1_ptr, char **str2_ptr);
 int compareNumbers(int *number1, int *number2);
@@ -29,14 +35,10 @@ int main()
 {
     FILE *finput = fopen(INPUT_FILE, "r");
     int linesCount = countNumberLines(finput);
-    Line lines[linesCount];
+    Line *lines = (Line*)calloc(linesCount, sizeof(Line));
+    assert(lines != nullptr);
 
-    for (int i = 0; i < linesCount; i++)
-    {
-        lines[i].str = nullptr;
-    }
-
-    readFile(lines, linesCount, finput);
+    readFileStruct(lines, linesCount, finput);
 
     FILE *foutput = fopen(OUTPUT_FILE, "w");
 
@@ -45,10 +47,16 @@ int main()
     fclose(finput);
     fclose(foutput);
 
+    free(lines);
+
     return 0;
 }
 
-int getNumbersBytesFile(FILE *finput)
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
+int getFileSize(FILE *finput)
 {
     assert(finput != nullptr);
 
@@ -67,8 +75,12 @@ int getNumbersBytesFile(FILE *finput)
 
     rewind(finput);
 
-    return numberBytesFile;
+    return (int)numberBytesFile;
 }
+
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
 
 void readFileStr(FILE *finput, char *str, int numberBytesFile)
 {
@@ -83,16 +95,17 @@ void readFileStr(FILE *finput, char *str, int numberBytesFile)
 }
 
 //================================================================================
-
+//!
 //--------------------------------------------------------------------------------
 
 int countNumberLines(FILE *finput)
 {
     assert(finput != nullptr);
 
-    int numberBytesFile = getNumbersBytesFile(finput);
+    int numberBytesFile = getFileSize(finput);
 
     char *str = (char*)calloc(numberBytesFile, sizeof(char));
+    assert(str != nullptr);
     readFileStr(finput, str, numberBytesFile);
 
     int linesCount = 0;
@@ -114,18 +127,20 @@ int countNumberLines(FILE *finput)
 }
 
 //================================================================================
-
+//!
 //--------------------------------------------------------------------------------
 
-void readFile(Line lines[], int linesCount, FILE *finput)
+void readFileStruct(Line *lines, int linesCount, FILE *finput)
 {
+    assert(lines != nullptr);
     assert(finput != nullptr);
 
     char *fileStr = nullptr;
     char *str = nullptr;
 
-    int numberBytesFile = getNumbersBytesFile(finput);
+    int numberBytesFile = getFileSize(finput);
     fileStr = (char*)calloc(numberBytesFile, sizeof(char));
+    assert(fileStr != nullptr);
     readFileStr(finput, fileStr, numberBytesFile);
 
     for (int i = 0, j = 0; i < linesCount; i++)
@@ -224,9 +239,46 @@ void swap(void *lines, size_t struct_size, int i, int j)
     free(buffer);
 }
 
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
 bool isPunctuationMark(int symbol)
 {
     return strchr(PUNCTUATION_MARKS, symbol) != nullptr;
+}
+
+//================================================================================
+//!
+//--------------------------------------------------------------------------------
+
+void *cleanPunctuationMark(char *str, char *endStr, bool isSum)
+{
+    assert(str != nullptr);
+    assert(endStr != nullptr);
+
+    if (isSum)
+    {
+        char *ptrStr = str;
+
+        while(isPunctuationMark(*ptrStr) && *ptrStr != '\0')
+        {
+            ptrStr++;
+        }
+
+        return ptrStr;
+    }
+    else
+    {
+        char *ptrEndStr = endStr;
+
+        while(isPunctuationMark(*ptrEndStr) && ptrEndStr >= str)
+        {
+            ptrEndStr--;
+        }
+
+        return ptrEndStr;
+    }
 }
 
 //================================================================================
@@ -244,20 +296,20 @@ int myStrcmp(char **str1_ptr, char **str2_ptr)
     assert(str1 != nullptr);
     assert(str2 != nullptr);
 
-    char *ptrStr1 = str1;
-    char *ptrStr2 = str2;
+    char *ptrStr1 = (char*)cleanPunctuationMark(str1, str1 + strlen(str1) - sizeof(char), true);
+    char *ptrStr2 = (char*)cleanPunctuationMark(str2, str2 + strlen(str2) - sizeof(char), true);
 
     for ( ; *ptrStr1 == *ptrStr2; )
     {
         if (isPunctuationMark(*ptrStr1))
         {
-            ptrStr1++;
+            ptrStr1 = (char*)cleanPunctuationMark(ptrStr1, str1 + strlen(str1) - sizeof(char), true);
             continue;
         }
 
         if (isPunctuationMark(*ptrStr2))
         {
-            ptrStr2++;
+            ptrStr2 = (char*)cleanPunctuationMark(ptrStr2, str2 + strlen(str2) - sizeof(char), true);
             continue;
         }
 
@@ -282,39 +334,39 @@ int reverseStrcmp(char **str1_ptr, char **str2_ptr)
     assert(str1_ptr != nullptr);
     assert(str2_ptr != nullptr);
 
-    char* str1 = *str1_ptr;
-    char* str2 = *str2_ptr;
+    char *str1 = *str1_ptr;
+    char *str2 = *str2_ptr;
 
     assert(str1 != nullptr);
     assert(str2 != nullptr);
 
-    int numberUnreadCharactersStr1 = (int)strlen(str1) - 1;
-    int numberUnreadCharactersStr2 = (int)strlen(str2) - 1;
+    char *ptrEndStr1 = (char*)cleanPunctuationMark(str1, str1 + strlen(str1) - sizeof(char), false);
+    char *ptrEndStr2 = (char*)cleanPunctuationMark(str2, str2 + strlen(str2) - sizeof(char), false);
 
-    while (numberUnreadCharactersStr1 >= 0 && numberUnreadCharactersStr2 >= 0)
+    for ( ; *ptrEndStr1 == *ptrEndStr2; )
     {
-        if (isPunctuationMark(str1[numberUnreadCharactersStr1]))
+        if (isPunctuationMark(*ptrEndStr1))
         {
-            numberUnreadCharactersStr1--;
+            ptrEndStr1 = (char*)cleanPunctuationMark(str1, ptrEndStr1, false);
             continue;
         }
 
-        if (isPunctuationMark(str2[numberUnreadCharactersStr2]))
+        if (isPunctuationMark(*ptrEndStr2))
         {
-            numberUnreadCharactersStr2--;
+            ptrEndStr2 = (char*)cleanPunctuationMark(str2, ptrEndStr2, false);
             continue;
         }
 
-        if (str1[numberUnreadCharactersStr1] != str2[numberUnreadCharactersStr2])
+        if (ptrEndStr1 == str1 || ptrEndStr2 == str2)
         {
-            return (str1[numberUnreadCharactersStr1] - str2[numberUnreadCharactersStr2]);
+            return ((int)strlen(str1) - (int)strlen(str2));
         }
 
-        numberUnreadCharactersStr1--;
-        numberUnreadCharactersStr2--;
+        ptrEndStr1--;
+        ptrEndStr2--;
     }
 
-    return (numberUnreadCharactersStr1 - numberUnreadCharactersStr2);
+    return (*ptrEndStr1 - *ptrEndStr2);
 }
 
 //================================================================================
