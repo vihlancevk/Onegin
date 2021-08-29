@@ -6,8 +6,6 @@
 //! @author Костя Вихлянцев (https://github.com/vihlancevk)
 //! @file main.cpp
 //! @date 28.08.2021
-//!
-//! @copyright Copyright (c) 2021
 //--------------------------------------------------------------------------------
 
 #include "fileOperations.h"
