@@ -5,13 +5,13 @@
 
 /// Описание строки текста.
 struct Line {
-    int lineNumber; ///< Номер строки в тексте.
-    char *str; ///< Строка текста.
+    char *str;      ///< Строка текста.
+    int sizeStr;    ///< Размер строки.
 };
 
 int getFileSize(FILE *finput);
 void *readFile(FILE *finput, char *str, int numberBytesSize);
-int countNumberLines(char *str);
+int countNumberLines(char *str, int numberBytesFile);
 void splitToLines(Line *lines, int linesCount, char *str);
 void writeFile(Line *lines, int linesCount, FILE *foutput, const char *nameSort);
 

@@ -72,23 +72,22 @@ void *readFile(FILE *finput, char *str, int numberBytesFile)
 //! @return Количество строк в тексте.
 //--------------------------------------------------------------------------------
 
-int countNumberLines(char *str)
+int countNumberLines(char *str, int numberBytesFile)
 {
     assert(str != nullptr);
 
     int linesCount = 0;
-    int length = (int)strlen(str);
 
-    for (int i = 0; i <= length; i++)
+    for (int i = 0; i < numberBytesFile; i++)
     {
-        if (str[i] == '\n')
+        if (str[i] == '\n' || (i + 1) == numberBytesFile)
         {
             linesCount++;
             str[i] = '\0';
         }
     }
 
-    return (linesCount + 1);
+    return linesCount;
 }
 
 static void *findNextLine(char *str)
@@ -125,8 +124,8 @@ void splitToLines(Line *lines, int linesCount, char *str)
 
     for (int i = 0; i < linesCount; i++)
     {
-        lines[i].lineNumber = i + 1;
         lines[i].str = ptrStr;
+        lines[i].sizeStr = (int) strlen(lines[i].str);
         ptrStr = (char *)findNextLine(ptrStr);
     }
 }

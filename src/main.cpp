@@ -2,7 +2,7 @@
 //! @mainpage OneginProgram
 //!
 //! @brief Обработка художественного текста.
-//!
+//
 //! @author Костя Вихлянцев (https://github.com/vihlancevk)
 //! @file main.cpp
 //! @date 28.08.2021
@@ -13,17 +13,64 @@
 
 /// Описание сортировки текта.
 struct Sort{
-    const char *nameSort; ///< Имя сортировки.
-    int (*strCompare)(void *, void *); ///< Функция сравнения, используемая в сотрировке.
+    const char *nameSort;                                      ///< Имя сортировки.
+    int (*LineCompare)(const void *elem1, const void *elems2); ///< Функция сравнения, используемая в сотрировке.
 };
 
-const int NUMBER_OF_SORT = 3;
+const int NUMBER_OF_SORT = 2;
 const char *INPUT_FILE = "input.txt";
 const char *OUTPUT_FILE = "output.txt";
 
+void *fillStructLine(const char *nameFile,int *linesCount, char *str);
+void *copyLine(Line *lines, int linesCount);
+
 int main()
 {
-    FILE *finput = fopen(INPUT_FILE, "r");
+    int linesCount = 0;
+    char *str = nullptr;
+    Line *lines = (Line *) fillStructLine(INPUT_FILE, &linesCount, str);
+    Line *linesCopy = (Line *) copyLine(lines, linesCount);
+
+    FILE *foutput = fopen(OUTPUT_FILE, "w");
+    assert(foutput != nullptr);
+
+    Sort sorts[] = {{"qsort",         (int (*)(const void *elem1, const void *elem2))(compareLine)       },
+                    {"reverse qsort", (int (*)(const void *elem1, const void *elem2))(compareLineReverse)}};
+
+    for (int i = 0; i < NUMBER_OF_SORT; i++)
+    {
+        qsort(lines, sizeof(Line), 0, linesCount - 1, sorts[i].LineCompare);
+        writeFile(lines, linesCount, foutput, sorts[i].nameSort);
+    }
+
+    writeFile(linesCopy, linesCount, foutput, "no sotr");
+
+    fclose(foutput);
+
+    free(str);
+    free(lines);
+    free(linesCopy);
+
+    return 0;
+}
+
+//================================================================================
+//! @brief Функция заполняет массив струтур Line строками из файла.
+//!
+//! @param [in] nameFile имя файла.
+//! @param [out] linesCount указатель на  переменную, в которой будет
+//!              храниться количество строк в файле.
+//! @param [in] str указатель на буфер, в которой будет скопирован файл nameFile.
+//!
+//! @return Указатель на заполненный массив структур Line.
+//--------------------------------------------------------------------------------
+
+void *fillStructLine(const char* nameFile ,int *linesCount, char *str)
+{
+    assert(nameFile != nullptr);
+    assert(linesCount != nullptr);
+
+    FILE *finput = fopen(nameFile, "r");
     assert(finput != nullptr);
 
     int numberBytesFile = getFileSize(finput);
@@ -33,7 +80,7 @@ int main()
         return 0;
     }
 
-    char *str = (char*)calloc(numberBytesFile, sizeof(char));
+    str = (char*)calloc(numberBytesFile + 1, sizeof(char));
     assert(str != nullptr);
 
     str  = (char *)readFile(finput, str, numberBytesFile);
@@ -43,32 +90,31 @@ int main()
         return 0;
     }
 
-    int linesCount = countNumberLines(str);
+    *linesCount = countNumberLines(str, numberBytesFile);
 
-    Line *lines = (Line*)calloc(linesCount, sizeof(Line));
+    Line *lines = (Line*)calloc(*linesCount, sizeof(Line));
     assert(lines != nullptr);
 
-    splitToLines(lines, linesCount, str);
-
-    FILE *foutput = fopen(OUTPUT_FILE, "w");
-    assert(foutput != nullptr);
-
-    Sort sorts[] = {{"qsort",         (int (*)(void *, void *))(compareStr)       },
-                    {"reverse qsort", (int (*)(void *, void *))(compareStrReverse)},
-                    {"no sort",       (int (*)(void *, void *))(compareNumbers)   }};
-
-    for(int i = 0; i < NUMBER_OF_SORT; i++)
-    {
-        qsort(lines, sizeof(Line), offsetof(Line, str), 0, linesCount - 1, sorts[i].strCompare);
-        writeFile(lines, linesCount, foutput, sorts[i].nameSort);
-    }
+    splitToLines(lines, *linesCount, str);
 
     fclose(finput);
-    fclose(foutput);
 
-    free(str);
-    free(lines);
-
-    return 0;
+    return lines;
 }
 
+//================================================================================
+//! @brief Функция создает копию массива струтур Line.
+//!
+//! @param [in] lines массив структур Line, который нужно скопировать.
+//! @param [in] linesCount количество элементов в массиве структур Line.
+//!
+//! @return Возвращает указатель на копию массива структур Line.
+//--------------------------------------------------------------------------------
+
+void *copyLine(Line *lines, int linesCount)
+{
+    Line *linesCopy = (Line *)calloc(linesCount, sizeof(Line));
+    memcpy(linesCopy, lines, sizeof(Line)*linesCount);
+
+    return linesCopy;
+}

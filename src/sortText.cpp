@@ -6,27 +6,50 @@ const char *PUNCTUATION_MARKS = " ,.!?:-;\"(){}<>";
 //================================================================================
 //! @brief Функция обмена значений двух элементов.
 //!
-//! @param [out] elems указатель на массив элементов.
+//! @param [out] elem1 указатель на первый элемент.
+//! @param [out] elem2 указатель на второй элемент.
 //! @param [in] struct_size размер элемента в байтах.
-//! @param [in] i сдвиг первого элемента относительно указателя.
-//! @param [in] j сдвиг второго элемента относительно указателя.
 //--------------------------------------------------------------------------------
 
-void swap(void *elems, size_t struct_size, int i, int j)
+void swap(void *elem1, void *elem2, size_t struct_size)
 {
-    assert(elems != nullptr);
+    assert(elem1 != nullptr);
+    assert(elem2 != nullptr);
     assert(struct_size != 0);
-    assert(i > -1);
-    assert(j > -1);
 
-    void *buffer = calloc(1, struct_size);
-    assert(buffer != nullptr);
-    memcpy(buffer, (elems + i * struct_size), struct_size);
-
-    memcpy((elems + i * struct_size), (elems + j * struct_size), struct_size);
-    memcpy((elems + j * struct_size), buffer, struct_size);
-
-    free(buffer);
+    unsigned long long *arrBytesULL1 = (unsigned long long *) elem1;
+    unsigned long long *arrBytesULL2 = (unsigned long long *) elem2;
+    size_t numberIterations = struct_size / sizeof(unsigned long long);
+    for (size_t num = 0; num < numberIterations; num++)
+    {
+        unsigned long long bufferULL = arrBytesULL1[num];
+        arrBytesULL1[num] = arrBytesULL2[num];
+        arrBytesULL2[num] = bufferULL;
+    }
+    if ((struct_size - numberIterations*sizeof(unsigned long long)) / sizeof(int) == 1)
+    {
+        int *arrBytesI1 = (int *) ((int *) elem1 + numberIterations*sizeof(unsigned long long));
+        int *arrBytesI2 = (int *) ((int *) elem2 + numberIterations*sizeof(unsigned long long));
+        int bufferI = arrBytesI1[0];
+        arrBytesI1[0] = arrBytesI2[0];
+        arrBytesI2[0] = bufferI;
+    }
+    if ((struct_size - numberIterations*sizeof(unsigned long long) - sizeof(int)) / sizeof(short int) == 1)
+    {
+        short int *arrBytesSI1 = (short int *) ((short int *) elem1 + numberIterations*sizeof(unsigned long long) + sizeof(int));
+        short int *arrBytesSI2 = (short int *) ((short int *) elem2 + numberIterations*sizeof(unsigned long long) + sizeof(int));
+        short int bufferSI = arrBytesSI1[0];
+        arrBytesSI1[0] = arrBytesSI2[0];
+        arrBytesSI2[0] = bufferSI;
+    }
+    if ((struct_size - numberIterations*sizeof(unsigned long long) - sizeof(int) - sizeof(short int)) / sizeof(char) == 1)
+    {
+        char *arrBytesC1 = (char *) ((char *) elem1 + numberIterations*sizeof(unsigned long long) + sizeof(int) + sizeof(short int));
+        char *arrBytesC2 = (char *) ((char *) elem2 + numberIterations*sizeof(unsigned long long) + sizeof(int) + sizeof(short int));
+        char bufferC = arrBytesC1[0];
+        arrBytesC1[0] = arrBytesC2[0];
+        arrBytesC2[0] = bufferC;
+    }
 }
 
 //================================================================================
@@ -88,10 +111,8 @@ void *skipPunctuationMark(char *str, char *endStr, bool isReverse)
 //================================================================================
 //! @brief Функция сравнения строк в лексиграфическом порядке слева направо.
 //!
-//! @param [in] str1_ptr указатель на область памяти,
-//!                      содержащую адрес первой строки.
-//! @param [in] str2_ptr указатель на область памяти,
-//!                      содержащую адрес второй строки.
+//! @param [in] line1 указатель на первый элемент массива структур Line.
+//! @param [in] line2 указатель на первый элемент массива структур Line.
 //!
 //! @note Функция сравнивает только символы строк, игнорируя пунктационные знаки.
 //!
@@ -100,37 +121,37 @@ void *skipPunctuationMark(char *str, char *endStr, bool isReverse)
 //!         меньше второй.
 //--------------------------------------------------------------------------------
 
-int compareStr(char **str1_ptr, char **str2_ptr)
+int compareLine(const Line *line1, const Line *line2)
 {
-    assert(str1_ptr != nullptr);
-    assert(str2_ptr != nullptr);
+    assert(line1 != nullptr);
+    assert(line2 != nullptr);
 
-    char* str1 = *str1_ptr;
-    char* str2 = *str2_ptr;
+    char* str1 = (*line1).str;
+    char* str2 = (*line2).str;
 
     assert(str1 != nullptr);
     assert(str2 != nullptr);
 
-    char *ptrStr1 = (char*)skipPunctuationMark(str1, str1 + strlen(str1) - sizeof(char), false);
-    char *ptrStr2 = (char*)skipPunctuationMark(str2, str2 + strlen(str2) - sizeof(char), false);
+    char *ptrStr1 = (char*)skipPunctuationMark(str1, str1 + (*line1).sizeStr - 1, false);
+    char *ptrStr2 = (char*)skipPunctuationMark(str2, str2 + (*line2).sizeStr - 1, false);
 
     for ( ; *ptrStr1 == *ptrStr2; )
     {
         if (isPunctuationMark(*ptrStr1))
         {
-            ptrStr1 = (char*)skipPunctuationMark(ptrStr1, str1 + strlen(str1) - sizeof(char), false);
+            ptrStr1 = (char*)skipPunctuationMark(ptrStr1, str1 + (*line1).sizeStr - 1, false);
             continue;
         }
 
         if (isPunctuationMark(*ptrStr2))
         {
-            ptrStr2 = (char*)skipPunctuationMark(ptrStr2, str2 + strlen(str2) - sizeof(char), false);
+            ptrStr2 = (char*)skipPunctuationMark(ptrStr2, str1 + (*line2).sizeStr - 1, false);
             continue;
         }
 
         if (*ptrStr1 == '\0' || *ptrStr2 == '\0')
         {
-            return ((int)strlen(str1) - (int)strlen(str2));
+            return ((*line1).sizeStr - (*line2).sizeStr);
         }
 
         ptrStr1++;
@@ -143,10 +164,8 @@ int compareStr(char **str1_ptr, char **str2_ptr)
 //================================================================================
 //! @brief Функция сравнения строк в лексиграфическом порядке справа налево.
 //!
-//! @param [in] str1_ptr указатель на область памяти,
-//!                      содержащую адрес первой строки.
-//! @param [in] str2_ptr указатель на область памяти,
-//!                      содержащую адрес второй строки.
+//! @param [in] line1 указатель на первый элемент массива структур Line.
+//! @param [in] line2 указатель на первый элемент массива структур Line.
 //!
 //! @note Функция сравнивает только символы строк, игнорируя пунктационные знаки.
 //!
@@ -155,19 +174,19 @@ int compareStr(char **str1_ptr, char **str2_ptr)
 //!         меньше второй.
 //--------------------------------------------------------------------------------
 
-int compareStrReverse(char **str1_ptr, char **str2_ptr)
+int compareLineReverse(const Line *line1, const Line *line2)
 {
-    assert(str1_ptr != nullptr);
-    assert(str2_ptr != nullptr);
+    assert(line1 != nullptr);
+    assert(line2 != nullptr);
 
-    char *str1 = *str1_ptr;
-    char *str2 = *str2_ptr;
+    char *str1 = (*line1).str;
+    char *str2 = (*line2).str;
 
     assert(str1 != nullptr);
     assert(str2 != nullptr);
 
-    char *ptrEndStr1 = (char*)skipPunctuationMark(str1, str1 + strlen(str1) - sizeof(char), true);
-    char *ptrEndStr2 = (char*)skipPunctuationMark(str2, str2 + strlen(str2) - sizeof(char), true);
+    char *ptrEndStr1 = (char*)skipPunctuationMark(str1, str1 + (*line1).sizeStr - 1, true);
+    char *ptrEndStr2 = (char*)skipPunctuationMark(str2, str2 + (*line2).sizeStr - 1, true);
 
     for ( ; *ptrEndStr1 == *ptrEndStr2; )
     {
@@ -185,7 +204,7 @@ int compareStrReverse(char **str1_ptr, char **str2_ptr)
 
         if (ptrEndStr1 == str1 || ptrEndStr2 == str2)
         {
-            return ((int)strlen(str1) - (int)strlen(str2));
+            return ((*line1).sizeStr - (*line1).sizeStr);
         }
 
         ptrEndStr1--;
@@ -196,59 +215,39 @@ int compareStrReverse(char **str1_ptr, char **str2_ptr)
 }
 
 //================================================================================
-//! @brief Функция сравнения двух целых чисел.
-//!
-//! @param [in] number1 указатель на первое число.
-//! @param [in] number2 указатель на второе число.
-//!
-//! @return Число больше нуля, если первое число больше второго, нуль,
-//!         если числа равны, и число меньше нуля, если первое число
-//!         меньше второго.
-//--------------------------------------------------------------------------------
-
-int compareNumbers(int *number1, int *number2)
-{
-    assert(number1 != nullptr);
-    assert(number2 != nullptr);
-
-    return (*number1 - *number2);
-}
-
-//================================================================================
 //! @brief Функция сортировки массива элементов.
 //!
 //! @param [out] elems указатель на массив элементов.
 //! @param [in] struct_size размер элемента массива в байтах.
-//! @param [in] offset сдвиг относительно элемента массива в байтах.
 //! @param [in] left левая граница массива
 //! @param [in] right правая граница массива
-//! @param [in] strCompare указатель на функцию сравнения, используемую
+//! @param [in] LineCompare указатель на функцию сравнения, используемую
 //!             при сортировке.
 //--------------------------------------------------------------------------------
 
-void qsort(void *elems, size_t struct_size, size_t offset, int left, int right, int (*strCompare)(void *, void *))
+void qsort(void *elems, size_t struct_size, int left, int right,
+           int (*LineCompare)(const void *elem1, const void *elem2))
 {
     assert(elems != nullptr);
     assert(struct_size != 0);
-    assert(strCompare != nullptr);
 
     int pivot = left;
 
     if (left >= right)
         return;
 
-    swap(elems, struct_size, left, (left + right) / 2);
+    swap((void *)(elems + left * struct_size), (void *)(elems + ((left + right) / 2) * struct_size), struct_size);
 
     for (int i = left + 1; i <= right; i++)
     {
-        if ((*strCompare)(((elems + i*struct_size) + offset), ((elems + left*struct_size) + offset)) < 0)
+        if ((*LineCompare)((elems + i*struct_size), (elems + left*struct_size))  < 0)
         {
             pivot++;
-            swap(elems, struct_size, pivot, i);
+            swap((void *)(elems + pivot * struct_size), (void *)(elems + i * struct_size), struct_size);
         }
     }
 
-    swap(elems, struct_size, left, pivot);
-    qsort(elems, struct_size, offset, left, pivot - 1, strCompare);
-    qsort(elems, struct_size, offset, pivot + 1, right, strCompare);
+    swap((void *)(elems + left * struct_size), (void *)(elems + pivot * struct_size), struct_size);
+    qsort(elems, struct_size, left, pivot - 1, LineCompare);
+    qsort(elems, struct_size, pivot + 1, right, LineCompare);
 }
