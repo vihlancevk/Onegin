@@ -21,14 +21,12 @@ const int NUMBER_OF_SORT = 2;
 const char *INPUT_FILE = "input.txt";
 const char *OUTPUT_FILE = "output.txt";
 
-void *fillStructLine(const char *nameFile,int *linesCount, char *str);
 void *copyLine(Line *lines, int linesCount);
 
 int main()
 {
     int linesCount = 0;
-    char *str = nullptr;
-    Line *lines = (Line *) fillStructLine(INPUT_FILE, &linesCount, str);
+    Line *lines = (Line *) fillStructLine(INPUT_FILE, &linesCount);
     Line *linesCopy = (Line *) copyLine(lines, linesCount);
 
     FILE *foutput = fopen(OUTPUT_FILE, "w");
@@ -47,59 +45,10 @@ int main()
 
     fclose(foutput);
 
-    free(str);
     free(lines);
     free(linesCopy);
 
     return 0;
-}
-
-//================================================================================
-//! @brief Функция заполняет массив струтур Line строками из файла.
-//!
-//! @param [in] nameFile имя файла.
-//! @param [out] linesCount указатель на  переменную, в которой будет
-//!              храниться количество строк в файле.
-//! @param [in] str указатель на буфер, в которой будет скопирован файл nameFile.
-//!
-//! @return Указатель на заполненный массив структур Line.
-//--------------------------------------------------------------------------------
-
-void *fillStructLine(const char* nameFile ,int *linesCount, char *str)
-{
-    assert(nameFile != nullptr);
-    assert(linesCount != nullptr);
-
-    FILE *finput = fopen(nameFile, "r");
-    assert(finput != nullptr);
-
-    int numberBytesFile = getFileSize(finput);
-    if (numberBytesFile == -1)
-    {
-        printf("Error getFileSize\n");
-        return 0;
-    }
-
-    str = (char*)calloc(numberBytesFile + 1, sizeof(char));
-    assert(str != nullptr);
-
-    str  = (char *)readFile(finput, str, numberBytesFile);
-    if (str == nullptr)
-    {
-        printf("Error readFile\n");
-        return 0;
-    }
-
-    *linesCount = countNumberLines(str, numberBytesFile);
-
-    Line *lines = (Line*)calloc(*linesCount, sizeof(Line));
-    assert(lines != nullptr);
-
-    splitToLines(lines, *linesCount, str);
-
-    fclose(finput);
-
-    return lines;
 }
 
 //================================================================================

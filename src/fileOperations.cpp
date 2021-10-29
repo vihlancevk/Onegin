@@ -145,6 +145,54 @@ static void moveToNextLine(FILE *foutput)
 }
 
 //================================================================================
+//! @brief Функция заполняет массив струтур Line строками из файла.
+//!
+//! @param [in] nameFile имя файла.
+//! @param [out] linesCount указатель на  переменную, в которой будет
+//!              храниться количество строк в файле.
+//! @param [in] str указатель на буфер, в которой будет скопирован файл nameFile.
+//!
+//! @return Указатель на заполненный массив структур Line.
+//--------------------------------------------------------------------------------
+
+void *fillStructLine(const char* nameFile ,int *linesCount)
+{
+    assert(nameFile != nullptr);
+    assert(linesCount != nullptr);
+
+    FILE *finput = fopen(nameFile, "r");
+    assert(finput != nullptr);
+
+    int numberBytesFile = getFileSize(finput);
+    if (numberBytesFile == -1)
+    {
+        printf("Error getFileSize\n");
+        return 0;
+    }
+
+    char *str = (char*)calloc(numberBytesFile + 1, sizeof(char));
+    assert(str != nullptr);
+
+    str  = (char *)readFile(finput, str, numberBytesFile);
+    if (str == nullptr)
+    {
+        printf("Error readFile\n");
+        return 0;
+    }
+
+    *linesCount = countNumberLines(str, numberBytesFile);
+
+    Line *lines = (Line*)calloc(*linesCount, sizeof(Line));
+    assert(lines != nullptr);
+
+    splitToLines(lines, *linesCount, str);
+
+    fclose(finput);
+
+    return lines;
+}
+
+//================================================================================
 //! @brief Функция записи информации о тексте в файл.
 //!
 //! @param [in] lines массив структур Line, в котором хранится текст.
