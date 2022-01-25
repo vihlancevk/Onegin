@@ -8,8 +8,8 @@
 //! @date 28.08.2021
 //--------------------------------------------------------------------------------
 
-#include "fileOperations.h"
-#include "sortText.h"
+#include "../libs/fileOperations.h"
+#include "../libs/sortText.h"
 
 /// Описание сортировки текта.
 struct Sort{
@@ -18,8 +18,8 @@ struct Sort{
 };
 
 const int NUMBER_OF_SORT = 2;
-const char *INPUT_FILE = "input.txt";
-const char *OUTPUT_FILE = "output.txt";
+const char *INPUT_FILE  = "../res/input.txt";
+const char *OUTPUT_FILE = "../res/output.txt";
 
 void *copyLine(Line *lines, int linesCount);
 

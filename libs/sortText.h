@@ -9,4 +9,4 @@ int compareLineReverse(const Line *line1, const Line *line2);
 void qsort(void *elems, size_t struct_size, int left, int right,
            int (*LineCompare)(const void *elem1, const void *elem2));
 
-#endif
+#endif 

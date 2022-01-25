@@ -1,5 +1,5 @@
-#include "fileOperations.h"
-#include "sortText.h"
+#include "../libs/fileOperations.h"
+#include "../libs/sortText.h"
 
 const char *PUNCTUATION_MARKS = " ,.!?:-;\"(){}<>";
 

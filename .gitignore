@@ -1,0 +1,5 @@
+src/bin/
+src/obj/
+src/OneginProgram.cbp
+src/OneginProgram.layout
+src/OneginProgram.depend
