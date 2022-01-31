@@ -8,8 +8,8 @@
 //! @date 28.08.2021
 //--------------------------------------------------------------------------------
 
-#include "../libs/fileOperations.h"
-#include "../libs/sortText.h"
+#include "../include/fileOperations.h"
+#include "../include/sortText.h"
 
 /// Описание сортировки текта.
 struct Sort{
